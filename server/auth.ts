@@ -5,15 +5,39 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User, insertUserSchema } from "@shared/schema";
+import { z, ZodError } from "zod";
 
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User {
+      id: number;
+      username: string;
+      role: "sender" | "carrier" | "both";
+    }
   }
 }
 
 const scryptAsync = promisify(scrypt);
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerRequestSchema = insertUserSchema
+  .extend({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    terms: z.boolean().optional(),
+    phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional().nullable(),
+  })
+  .strict();
+
+const formatZodError = (error: ZodError) =>
+  error.errors.map((err) => ({
+    path: err.path.join("."),
+    message: err.message,
+  }));
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -64,7 +88,7 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      done(null, user ?? undefined);
     } catch (err) {
       done(err);
     }
@@ -72,14 +96,17 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const parsedBody = registerRequestSchema.parse(req.body);
+      const { terms: _terms, ...userInput } = parsedBody;
+
+      const existingUser = await storage.getUserByUsername(userInput.username);
       if (existingUser) {
-        return res.status(400).send("Username already exists");
+        return res.status(400).json({ message: "Username already exists" });
       }
 
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        ...userInput,
+        password: await hashPassword(userInput.password),
       });
 
       req.login(user, (err) => {
@@ -89,15 +116,48 @@ export function setupAuth(app: Express) {
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: formatZodError(error),
+        });
+      }
       next(error);
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    if (req.user) {
-      // Remove password from response
-      const { password, ...userWithoutPassword } = req.user;
-      res.status(200).json(userWithoutPassword);
+  app.post("/api/login", async (req, res, next) => {
+    try {
+      const parsedBody = loginSchema.parse(req.body);
+
+      passport.authenticate("local", (err: any, user: any) => {
+        if (err) {
+          return next(err);
+        }
+
+        if (!user) {
+          return res
+            .status(401)
+            .json({ message: "Invalid username or password" });
+        }
+
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            return next(loginErr);
+          }
+
+          const { password, ...userWithoutPassword } = user;
+          res.status(200).json(userWithoutPassword);
+        });
+      })(req, res, next);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: formatZodError(error),
+        });
+      }
+      next(error);
     }
   });
 
@@ -111,7 +171,8 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     // Remove password from response
-    const { password, ...userWithoutPassword } = req.user;
+    const user = req.user as any;
+    const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   });
 }

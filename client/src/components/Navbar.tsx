@@ -1,36 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Package, Menu, User as UserIcon, LogOut } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [, navigate] = useLocation();
-  const [user, setUser] = useState<{fullName: string} | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch user data directly
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/user");
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchUser();
-  }, []);
+  const { user, isLoading, logoutMutation } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -38,10 +15,10 @@ const Navbar = () => {
   
   const handleLogout = async () => {
     try {
-      await apiRequest("POST", "/api/logout");
-      setUser(null);
-      navigate("/");
+      await logoutMutation.mutateAsync();
+      navigate("/auth");
     } catch (error) {
+      // errors are surfaced via toast in the mutation
       console.error("Logout failed:", error);
     }
   };
@@ -71,7 +48,9 @@ const Navbar = () => {
           </div>
           
           <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
-            {user ? (
+            {isLoading ? (
+              <div className="text-sm text-gray-500">Checking session…</div>
+            ) : user ? (
               <>
                 <div className="text-sm font-medium text-gray-700">
                   Welcome, {user.fullName}
@@ -80,14 +59,15 @@ const Navbar = () => {
                   <UserIcon className="w-4 h-4 mr-1" />
                   Profile
                 </Link>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={handleLogout}
                   className="flex items-center"
+                  disabled={logoutMutation.isPending}
                 >
                   <LogOut className="w-4 h-4 mr-1" />
-                  Logout
+                  {logoutMutation.isPending ? "Logging out…" : "Logout"}
                 </Button>
               </>
             ) : (
@@ -140,12 +120,13 @@ const Navbar = () => {
                 <UserIcon className="w-4 h-4 mr-2" />
                 Profile
               </Link>
-              <button 
+              <button
                 onClick={handleLogout}
-                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 flex items-center"
+                className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 flex items-center disabled:opacity-60"
+                disabled={logoutMutation.isPending}
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                {logoutMutation.isPending ? "Logging out…" : "Logout"}
               </button>
             </div>
           ) : (

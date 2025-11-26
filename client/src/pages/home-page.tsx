@@ -13,7 +13,9 @@ const HomePage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/user");
+        const res = await fetch("/api/user", {
+          credentials: "include",
+        });
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);

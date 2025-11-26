@@ -41,16 +41,39 @@ const ReviewItem = ({ review }: ReviewItemProps) => {
             {review.reviewer.fullName?.charAt(0) || review.reviewer.username?.charAt(0) || "U"}
           </AvatarFallback>
         </Avatar>
-        <div className="ml-3">
+        <div className="ml-3 flex-1">
           <div className="text-sm font-medium text-gray-900">
             {review.reviewer.fullName || review.reviewer.username}
           </div>
           <div className="mt-1">{renderStars(review.rating)}</div>
-          <div className="mt-1 text-sm text-gray-700">
+          
+          {/* Multi-metric ratings */}
+          {(review as any).punctuality && (review as any).communication && (review as any).packageHandling && (
+            <div className="mt-2 space-y-1 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Punctuality:</span>
+                <span className="font-medium">{renderStars((review as any).punctuality)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Communication:</span>
+                <span className="font-medium">{renderStars((review as any).communication)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Package Handling:</span>
+                <span className="font-medium">{renderStars((review as any).packageHandling)}</span>
+              </div>
+            </div>
+          )}
+          
+          <div className="mt-2 text-sm text-gray-700">
             <p>{review.comment}</p>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            {formatDate(review.createdAt)}
+          {formatDate(
+            review.createdAt instanceof Date
+              ? review.createdAt.toISOString()
+              : review.createdAt
+          )}
           </div>
         </div>
       </div>

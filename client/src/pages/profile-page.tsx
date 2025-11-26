@@ -20,7 +20,9 @@ const ProfilePage = () => {
     const fetchUser = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/user");
+        const res = await fetch("/api/user", {
+          credentials: "include",
+        });
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
@@ -84,6 +86,11 @@ const ProfilePage = () => {
               <p className="text-sm text-gray-500">
                 Username: {user.username}
               </p>
+              {user.phoneNumber && (
+                <p className="text-sm text-gray-500">
+                  📞 {user.phoneNumber}
+                </p>
+              )}
               {user.rating && (
                 <div className="flex items-center mt-1">
                   {[...Array(5)].map((_, i) => (

@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -13,7 +13,7 @@ import {
 import DeliveryStatusBadge from "./DeliveryStatusBadge";
 import { 
   Package, Clock, DollarSign,
-  CheckCircle, LogIn
+  CheckCircle, LogIn, User as UserIcon
 } from "lucide-react";
 
 interface DeliveryCardProps {
@@ -54,11 +54,29 @@ const DeliveryCard = ({ delivery, showActions = true }: DeliveryCardProps) => {
     return `₹${(amount / 100).toFixed(2)}`;
   };
 
+  const shouldFetchSenderProfile = !delivery.sender?.fullName && !!delivery.senderId;
+  const { data: senderProfile } = useQuery({
+    queryKey: ["sender-profile", delivery.senderId],
+    enabled: shouldFetchSenderProfile,
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${delivery.senderId}/profile`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to load sender profile");
+      }
+      return await res.json();
+    },
+  });
+
   // Format package size
   const formatPackageSize = (size: string, weight: number) => {
     const weightInKg = weight / 1000;
     return `${size.charAt(0).toUpperCase() + size.slice(1)} package (${weightInKg} kg)`;
   };
+
+  const senderName = delivery.sender?.fullName || senderProfile?.fullName;
+  const senderPhone = delivery.sender?.phoneNumber || senderProfile?.phoneNumber;
 
   return (
     <Card className="h-full flex flex-col">
@@ -71,6 +89,15 @@ const DeliveryCard = ({ delivery, showActions = true }: DeliveryCardProps) => {
             <p className="mt-1 text-sm text-gray-500">
               {delivery.preferredDeliveryDate}
             </p>
+            {senderName && (
+              <div className="mt-2 flex items-center text-sm text-gray-600">
+                <UserIcon className="h-4 w-4 mr-2 text-gray-400" />
+                <div>
+                  <p className="font-medium text-gray-700">Sender: {senderName}</p>
+                  {senderPhone && <p className="text-xs text-gray-500">+91 {senderPhone}</p>}
+                </div>
+              </div>
+            )}
           </div>
           <DeliveryStatusBadge status={delivery.status} />
         </div>

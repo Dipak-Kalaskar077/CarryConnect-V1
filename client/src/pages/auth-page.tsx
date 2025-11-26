@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TruckIcon, Package } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 // Login form schema
 const loginSchema = z.object({
@@ -47,6 +47,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(1, "Full name is required"),
   role: z.enum(["sender", "carrier", "both"]),
+  phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional().nullable(),
   // Allow either true or false for terms during development
   terms: z.boolean(),
 });
@@ -57,7 +58,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const AuthPage = () => {
   // Temporarily removed useAuth dependency
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
+  const { loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isPending, setIsPending] = useState(false);
 
@@ -77,6 +78,7 @@ const AuthPage = () => {
       password: "",
       fullName: "",
       role: "both",
+      phoneNumber: "",
       terms: false,
     },
   });
@@ -84,34 +86,14 @@ const AuthPage = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     try {
       setIsPending(true);
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      await loginMutation.mutateAsync({
+        username: data.username,
+        password: data.password,
       });
-      
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(errorMessage || "Login failed");
-      }
-      
-      const user = await response.json();
-      
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${user.fullName}!`,
-      });
-      
+
       setLocation("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid username or password",
-        variant: "destructive",
-      });
     } finally {
       setIsPending(false);
     }
@@ -120,34 +102,17 @@ const AuthPage = () => {
   const onRegisterSubmit = async (data: RegisterFormValues) => {
     try {
       setIsPending(true);
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      await registerMutation.mutateAsync({
+        username: data.username,
+        password: data.password,
+        fullName: data.fullName,
+        role: data.role,
+        phoneNumber: data.phoneNumber || null,
       });
-      
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(errorMessage || "Registration failed");
-      }
-      
-      const user = await response.json();
-      
-      toast({
-        title: "Registration successful",
-        description: `Welcome to CarryConnect, ${user.fullName}!`,
-      });
-      
+
       setLocation("/dashboard");
     } catch (error) {
       console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Could not create account",
-        variant: "destructive",
-      });
     } finally {
       setIsPending(false);
     }
@@ -316,6 +281,28 @@ const AuthPage = () => {
                                 <SelectItem value="both">Both</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={registerForm.control}
+                        name="phoneNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number (10 digits)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="1234567890" 
+                                {...field}
+                                maxLength={10}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, ''); // Only digits
+                                  field.onChange(value);
+                                }}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

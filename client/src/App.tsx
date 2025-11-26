@@ -7,10 +7,14 @@ import DashboardPage from "@/pages/dashboard-page";
 import AvailableDeliveriesPage from "@/pages/available-deliveries-page";
 import CreateDeliveryPage from "@/pages/create-delivery-page";
 import DeliveryDetailsPage from "@/pages/delivery-details-page";
+import ChatPage from "@/pages/chat-page";
 import ProfilePage from "@/pages/profile-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import { AuthProvider } from "./hooks/use-auth";
 
 function Router() {
   return (
@@ -24,6 +28,7 @@ function Router() {
           <ProtectedRoute path="/dashboard" component={DashboardPage} />
           <ProtectedRoute path="/create-delivery" component={CreateDeliveryPage} />
           <ProtectedRoute path="/profile" component={ProfilePage} />
+          <ProtectedRoute path="/deliveries/:id/chat" component={ChatPage} />
           <Route path="/deliveries/:id" component={DeliveryDetailsPage} />
           <Route component={NotFound} />
         </Switch>
@@ -33,12 +38,22 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
   return (
     <>
       <Router />
       <Toaster />
     </>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

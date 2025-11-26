@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Delivery, User } from "@shared/schema";
 
 const AvailableDeliveriesPage = () => {
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string | number>>({});
   
   // Build the query string for filtering
   const buildQueryString = () => {
@@ -14,9 +14,11 @@ const AvailableDeliveriesPage = () => {
     // Add status=requested filter by default
     queryParams.append("status", "requested");
     
-    // Add any additional filters
+    // Add any additional filters (convert numbers to strings for query params)
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) queryParams.append(key, value);
+      if (value && value !== "any") {
+        queryParams.append(key, String(value));
+      }
     });
     
     return `/api/deliveries?${queryParams.toString()}`;

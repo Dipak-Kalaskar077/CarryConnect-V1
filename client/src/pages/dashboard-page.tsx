@@ -27,7 +27,7 @@ const DashboardPage = () => {
           <p className="mt-1 text-sm text-gray-500">Manage your package deliveries</p>
         </div>
         
-        <div className="mt-4 md:mt-0 flex space-x-3">
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-3 items-center">
           {isSender && (
             <Link href="/create-delivery">
               <Button className="flex items-center">

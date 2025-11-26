@@ -1,0 +1,9 @@
+Check .env file is created and neon database url is corretly filled
+
+npm run db:generate //for generating database according to Schema
+
+npm run db:push //for pushing database schema to neon database (cloudly)
+
+npm run dev (for running the project)
+
+now check http://localhost:5000/

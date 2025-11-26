@@ -19,6 +19,15 @@ const DeliveryList = ({
     (Delivery & { sender?: User; carrier?: User })[]
   >({
     queryKey: [queryKey],
+    queryFn: async () => {
+      const res = await fetch(queryKey, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      return await res.json();
+    },
   });
 
   if (isLoading) {
