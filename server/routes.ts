@@ -187,74 +187,61 @@ app.patch("/api/deliveries/:id/status", isAuthenticated, async (req, res) => {
   
 
   // Cancel delivery
-  app.post("/api/deliveries/:id/cancel", isAuthenticated, async (req, res) => {
-    try {
-      const deliveryId = parseInt(req.params.id);
-      if (isNaN(deliveryId)) {
-        return res.status(400).json({ message: "Invalid delivery ID" });
-      }
-
-      const { cancellationReason } = req.body;
-      if (!cancellationReason || typeof cancellationReason !== "string" || cancellationReason.trim().length < 10) {
-        return res.status(400).json({ message: "Cancellation reason is required and must be at least 10 characters" });
-      }
-
-      // Get delivery to check permissions
-      const delivery = await storage.getDeliveryById(deliveryId);
-      if (!delivery) {
-        return res.status(404).json({ message: "Delivery not found" });
-      }
-
-      const isSender = req.user!.id === delivery.senderId;
-      const isCarrier = req.user!.id === delivery.carrierId;
-
-      // Check if already cancelled
-      if (delivery.status === "cancelled") {
-        return res.status(400).json({ message: "Delivery is already cancelled" });
-      }
-
-      // Check if user can cancel
-      // Sender can cancel before picked
-      // Carrier can cancel before in-transit
-      if (isSender) {
-        if (delivery.status !== "requested" && delivery.status !== "accepted") {
-          return res.status(400).json({ message: "Sender can only cancel delivery before it is picked" });
-        }
-      } else if (isCarrier) {
-        if (delivery.status !== "requested" && delivery.status !== "accepted" && delivery.status !== "picked") {
-          return res.status(400).json({ message: "Carrier can only cancel delivery before it is in-transit" });
-        }
-      } else {
-        return res.status(403).json({ message: "Only the sender or carrier can cancel this delivery" });
-      }
-
-      // Cancel the delivery
-      await storage.cancelDelivery(deliveryId, cancellationReason.trim());
-
-      // Send notifications
-      if (isSender && delivery.carrierId) {
-        await storage.sendNotification(delivery.carrierId, {
-          title: "Delivery Cancelled",
-          body: `The delivery has been cancelled by the sender. Reason: ${cancellationReason.trim()}`,
-          data: { deliveryId, type: "delivery_cancelled" }
-        });
-      } else if (isCarrier) {
-        await storage.sendNotification(delivery.senderId, {
-          title: "Delivery Cancelled",
-          body: `The delivery has been cancelled by the carrier. Reason: ${cancellationReason.trim()}`,
-          data: { deliveryId, type: "delivery_cancelled" }
-        });
-      }
-
-      // Get updated delivery with full info
-      const cancelledDelivery = await storage.getDeliveryWithUsers(deliveryId);
-      
-      res.json(cancelledDelivery || { message: "Delivery cancelled successfully" });
-    } catch (error) {
-      console.error("Error cancelling delivery:", error);
-      res.status(500).json({ message: "Failed to cancel delivery" });
+app.post("/api/deliveries/:id/cancel", isAuthenticated, async (req, res) => {
+  try {
+    const deliveryId = parseInt(req.params.id);
+    if (isNaN(deliveryId)) {
+      return res.status(400).json({ message: "Invalid delivery ID" });
     }
-  });
+
+    const { cancellationReason } = req.body;
+    if (!cancellationReason || typeof cancellationReason !== "string" || cancellationReason.trim().length < 10) {
+      return res.status(400).json({ message: "Cancellation reason is required and must be at least 10 characters" });
+    }
+
+    // Get delivery to check permissions
+    const delivery = await storage.getDeliveryById(deliveryId);
+    if (!delivery) {
+      return res.status(404).json({ message: "Delivery not found" });
+    }
+
+    // Only sender allowed to cancel
+    const isSender = req.user!.id === delivery.senderId;
+    if (!isSender) {
+      return res.status(403).json({ message: "Only the sender can cancel the delivery" });
+    }
+
+    // Prevent cancelling if already completed or in transit
+    if (delivery.status === "delivered" || delivery.status === "in-transit") {
+      return res.status(400).json({ message: "You cannot cancel the delivery after it is in transit" });
+    }
+
+    // Check if already cancelled
+    if (delivery.status === "cancelled") {
+      return res.status(400).json({ message: "Delivery is already cancelled" });
+    }
+
+    // Cancel the delivery
+    await storage.cancelDelivery(deliveryId, cancellationReason.trim());
+
+    // Notify carrier
+    if (delivery.carrierId) {
+      await storage.sendNotification(delivery.carrierId, {
+        title: "Delivery Cancelled",
+        body: `The sender has cancelled this delivery.\nReason: ${cancellationReason.trim()}`,
+        data: { deliveryId, type: "delivery_cancelled" }
+      });
+    }
+
+    // Return updated delivery
+    const cancelledDelivery = await storage.getDeliveryWithUsers(deliveryId);
+    res.json(cancelledDelivery || { message: "Delivery cancelled successfully" });
+
+  } catch (error) {
+    console.error("Error cancelling delivery:", error);
+    res.status(500).json({ message: "Failed to cancel delivery" });
+  }
+});
 
   // Validate OTP
   app.post("/api/deliveries/:id/validate-otp", isAuthenticated, async (req, res) => {

@@ -530,36 +530,19 @@ const DeliveryDetailsPage = () => {
                 </Card>
               )}
               
-              {/* Cancel button for other scenarios (sender or carrier after acceptance) */}
-              {delivery.status !== "cancelled" && delivery.status !== "delivered" && delivery.status !== "requested" && (
-                <div className="mt-6">
-                  {((isSender && (delivery.status === "accepted")) ||
-                    (isCarrier && (delivery.status === "accepted" || delivery.status === "picked"))) && (
-                    <Button 
-                      onClick={() => setShowCancelModal(true)}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel Delivery
-                    </Button>
-                  )}
-                </div>
-              )}
-              
-              {/* Cancel button for sender when status is requested */}
-              {isSender && delivery.status === "requested" && (
-                <div className="mt-6">
-                  <Button 
-                    onClick={() => setShowCancelModal(true)}
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel Delivery
-                  </Button>
-                </div>
-              )}
+              {/* Cancel button - only sender can cancel, regardless of status */}
+              {isSender && delivery.status !== "cancelled" && delivery.status !== "delivered" && (
+              <div className="mt-6">
+                <Button 
+                  onClick={() => setShowCancelModal(true)}
+                  variant="destructive"
+                  className="w-full"
+                >
+                <X className="w-4 h-4 mr-2" />
+                Cancel Delivery
+                </Button>
+              </div>
+            )}            
               
               {/* Carrier information (when carrier exists and is not current user) */}
               {delivery.carrier && !isCarrier && (
