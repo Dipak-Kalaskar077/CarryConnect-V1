@@ -1,0 +1,105 @@
+You are an expert senior full-stack TypeScript engineer. 
+Build a complete production-ready MERN/TypeScript web application named **CarryConnect** similar to Porter/WeFast but peer-to-peer. 
+The app connects Senders who want to send parcels with Carriers already traveling on the same route.
+
+🧱 Tech stack:
+- Frontend: React + TypeScript + Vite + TailwindCSS + ShadCN UI + React Query + Socket.IO client
+- Backend: Node.js + Express + TypeScript + Socket.IO real-time chat + JWT auth + bcrypt passwords
+- DB: PostgreSQL (Drizzle ORM or Prisma preferred)
+- Storage: Local uploads folder for chat file attachments
+- Deployment Compatible: Replit
+
+📦 Core models:
+User:
+- id, fullName, username, phoneNumber, passwordHash, role ("sender"|"carrier"|"both")
+- rating (float), totalReviews(int), createdAt
+
+Delivery:
+- id, senderId, carrierId (nullable), pickupLocation, dropLocation, packageSize, packageWeight,
+  description, specialInstructions, deliveryFee, preferredDeliveryDate, preferredDeliveryTime
+- status: requested | accepted | picked | in-transit | delivered | cancelled
+- pickupOtp, deliveryOtp (string 6 digits)
+- cancellationReason, cancelledAt
+- createdAt
+
+Message:
+- id, deliveryId, senderId, receiverId, message, attachmentPath, attachmentType, createdAt
+
+DeliveryLocation:
+- id, deliveryId, latitude, longitude, timestamp
+
+Review:
+- id, deliveryId, reviewerId, revieweeId, punctuality, communication, packageHandling, rating, comment, createdAt
+
+🛠 Features to implement:
+1) Authentication
+- Register, login, logout
+- JWT access token, refresh token
+- Role selection sender/carrier/both
+
+2) Delivery creation + listing + filtering
+- Sender creates delivery requests
+- Carriers view available deliveries to accept
+- Listing card must show sender name & rating
+
+3) Accept delivery
+- Only carriers can accept
+- Sender cannot accept own delivery
+- Confirm modal before action
+
+4) OTP system (internal, displayed onscreen)
+- Generate 6-digit pickupOtp when carrier marks **Picked**
+- Generate 6-digit deliveryOtp when carrier marks **In-Transit**
+- Show both OTPs only to sender in DeliveryDetails page
+- Carrier must enter correct OTP to mark Delivered
+
+5) Delivery cancellation system
+- Only sender can cancel before picked
+- Only carrier can cancel before in-transit
+- Requires cancellation reason
+- Shows Cancelled status + reason + cancelledAt
+
+6) Real-time chat with Socket.IO
+- 1-to-1 chat between sender & carrier
+- Text + image file attachments (jpg/png)
+- Seen receipts + typing indicator
+- Auto-scroll & load last 20 messages with pagination
+
+7) Profile view
+- Show name, username, phone, rating, total reviews
+- View profile from delivery details
+
+8) Live GPS tracking (mock until real integration)
+- Carrier sends location every 5 sec
+- Sender sees Live Location card with timestamp & coordinates
+
+9) Delivery status timeline UI:
+Requested → Accepted → Picked → In-Transit → Delivered/Cancelled
+
+10) Call buttons
+- Sender can call carrier
+- Carrier can call sender (tel:+91xxxx)
+
+🔔 Important UI rules:
+- Use ShadCN modals for confirmations & cancellation
+- Sender sees OTP card beautifully styled (pickup OTP + delivery OTP)
+- Delivery cards show sender name, rating, locations, fee, date
+- Chat header must show fullName + phone number below
+
+🧠 Behavior rules:
+- All status updates should return full hydrated delivery object
+  including sender, carrier, pickupOtp, deliveryOtp
+- After updating status, frontend must invalidate queries & update UI immediately
+
+🎯 Goal:
+Generate the complete codebase (frontend & backend) step by step.
+Create correct folder structure, DB schema, API routes, socket events, React pages & components.
+
+Start by:
+1. Initializing a new full-stack project in Replit
+2. Creating database schema & migrations
+3. Building authentication
+4. Building delivery CRUD
+Then proceed sequentially implementing features above.
+
+Stop after each section and ask: **Continue?** before generating the next chunk of code.
