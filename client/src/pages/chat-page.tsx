@@ -97,7 +97,7 @@ const ChatPage = () => {
     const socketURL =
       import.meta.env.MODE === "development"
       ? "http://localhost:5000"
-      : "https://carryconnect-v1.onrender.com";
+      : "wss://carryconnect-v1.onrender.com";
 
     const newSocket = io(socketURL, {
       withCredentials: true,
@@ -314,11 +314,12 @@ const ChatPage = () => {
                 </CardTitle>
                 <div className="text-sm text-gray-500 mt-1">
                   <p className="font-medium text-gray-900">{otherUser?.fullName || "Loading..."}</p>
-                  {(isSender && carrierProfile?.phoneNumber) || (!isSender && senderProfile?.phoneNumber) ? (
+                  {otherUser?.phoneNumber && (
                     <p className="text-gray-600 mt-0.5">
-                      +91 {(isSender ? carrierProfile?.phoneNumber : senderProfile?.phoneNumber)}
+                      +91 {otherUser.phoneNumber}
                     </p>
-                  ) : null}
+                  )}
+
                 </div>
               </div>
             </div>
