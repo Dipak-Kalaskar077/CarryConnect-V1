@@ -1,0 +1,114 @@
+🌟 Carry & Connect – Full Project Flow (Very Simple Explanation)
+
+Imagine how a real user will use your app from start to end.
+This is the official flow your whole project follows.
+
+✅ 1. User joins the app
+
+User creates an account → login
+
+User becomes a member of the platform
+
+Every user can work as:
+
+A sender (sending a parcel)
+
+A carrier (carrying the parcel)
+
+Or both
+
+✅ 2. Sender creates a delivery request
+
+Sender fills a form:
+
+From where → To where
+
+Package size & weight
+
+Delivery date & time
+
+Delivery fee
+
+Description & instructions
+
+After clicking Create Delivery:
+
+Delivery is saved with status: requested
+
+No carrier is assigned yet
+
+This delivery will now appear in:
+
+Sender’s My Deliveries
+
+Available Deliveries for everyone else to see
+
+✅ 3. Another user (carrier) sees available deliveries
+
+They open the page Available Deliveries
+
+They see all delivery requests made by others
+
+If interested, they click Accept Delivery
+
+✅ 4. Carrier accepts the delivery
+
+When a carrier accepts:
+
+The app assigns them as the carrier
+
+Delivery status becomes: accepted
+
+Delivery disappears from the available list
+(because someone already accepted it)
+
+✅ 5. Carrier picks the parcel
+
+When they go to take the parcel physically:
+
+They click Mark as Picked
+
+Status becomes: picked
+
+✅ 6. Carrier delivers the parcel
+
+After completing the delivery:
+
+They click Mark as Delivered
+
+Status becomes: delivered
+
+✅ 7. Review each other
+
+After delivery:
+
+Sender can rate the carrier
+
+Carrier can rate the sender
+
+Only one review each
+
+🔄 8. Optional: Sender can cancel
+
+Sender can cancel ONLY IF:
+
+Delivery is still requested
+
+No carrier has accepted it yet
+
+Status becomes: cancelled
+
+🎯 THAT’S IT — COMPLETE APP FLOW
+
+Very simple:
+
+Sender creates delivery → (requested)
+Carrier accepts → (accepted)
+Carrier picks → (picked)
+Carrier delivers → (delivered)
+Both rate each other → (reviews)
+
+
+OR
+
+Sender cancels → (cancelled)
