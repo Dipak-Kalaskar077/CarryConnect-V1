@@ -94,11 +94,17 @@ const ChatPage = () => {
       return;
     }
 
-    // Create socket connection
-    const newSocket = io("http://localhost:5000", {
+    const socketURL =
+      import.meta.env.MODE === "development"
+      ? "http://localhost:5000"
+      : "https://carryconnect-v1.onrender.com";
+
+    const newSocket = io(socketURL, {
       withCredentials: true,
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
     });
+
+    
 
     newSocket.on("connect", () => {
       console.log("Socket connected");
