@@ -51,19 +51,28 @@ const ChatPage = () => {
       return (res as MessageWithSender[]) || [];
     },
   });
+// Fetch sender and carrier profiles for phone numbers
+const { data: senderProfile } = useQuery<Partial<User>>({
+  queryKey: [`/api/users/${delivery?.senderId}/profile`],
+  enabled: !!delivery?.senderId,
+  queryFn: async () => {
+    const res = await fetch(`/api/users/${delivery?.senderId}/profile`, {
+      credentials: "include",
+    });
+    return res.ok ? res.json() : null;
+  },
+});
 
-  // Fetch sender and carrier profiles for phone numbers
-  const { data: senderProfile } = useQuery<Partial<User>>({
-    queryKey: [`/api/users/${delivery?.senderId}/profile`],
-    enabled: !!delivery?.senderId,
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
-
-  const { data: carrierProfile } = useQuery<Partial<User>>({
-    queryKey: [`/api/users/${delivery?.carrierId}/profile`],
-    enabled: !!delivery?.carrierId,
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
+const { data: carrierProfile } = useQuery<Partial<User>>({
+  queryKey: [`/api/users/${delivery?.carrierId}/profile`],
+  enabled: !!delivery?.carrierId,
+  queryFn: async () => {
+    const res = await fetch(`/api/users/${delivery?.carrierId}/profile`, {
+      credentials: "include",
+    });
+    return res.ok ? res.json() : null;
+  },
+});
 
   // Initialize socket connection
   useEffect(() => {
@@ -319,6 +328,14 @@ const ChatPage = () => {
                       +91 {otherUser.phoneNumber}
                     </p>
                   )}
+                  <Button
+                    onClick={() => window.location.href = `tel:${otherUser?.phoneNumber}`}
+                    variant="outline"
+                    size="icon"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </Button>
+
 
                 </div>
               </div>

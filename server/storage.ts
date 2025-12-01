@@ -205,6 +205,7 @@ export class DatabaseStorage implements IStorage {
         role: users.role,
         rating: users.rating,
         totalReviews: users.totalReviews,
+        phoneNumber: users.phoneNumber,
       })
       .from(users)
       .where(eq(users.id, userId));
