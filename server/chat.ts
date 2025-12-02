@@ -177,6 +177,19 @@ export function setupChat(io: SocketIOServer, sessionMiddleware: session.Session
       }
     });
 
+    // Typing indicator
+    socket.on("typing", ({ deliveryId }) => {
+      const roomName = `delivery-${deliveryId}`;
+      socket.to(roomName).emit("typing", { fullName: (socket as any).user.fullName });
+    });
+    
+    socket.on("stopTyping", ({ deliveryId }) => {
+      const roomName = `delivery-${deliveryId}`;
+      socket.to(roomName).emit("stopTyping");
+    });
+    
+
+
     // Handle disconnect
     socket.on("disconnect", () => {
       socketSessions.delete(socketId);

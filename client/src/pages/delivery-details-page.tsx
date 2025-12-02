@@ -673,7 +673,7 @@ const DeliveryDetailsPage = () => {
                     className="w-full"
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
-                    Open Chat
+                  Chat with Your Delivery Partner
                   </Button>
                 </div>
               )}

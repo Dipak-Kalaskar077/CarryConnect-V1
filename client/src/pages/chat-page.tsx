@@ -31,6 +31,9 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  const [isTyping, setIsTyping] = useState(false);
+  let typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch delivery details
   const { data: delivery, isLoading: deliveryLoading } = useQuery<Delivery>({
     queryKey: [`/api/deliveries/${deliveryId}`],
@@ -154,6 +157,16 @@ const { data: carrierProfile } = useQuery<Partial<User>>({
       setIsJoining(false);
     });
 
+    newSocket.on("typing", ({ fullName }) => {
+      setIsTyping(true);
+    });
+    
+    
+    newSocket.on("stopTyping", () => {
+      setIsTyping(false);
+    });
+    
+    
     newSocket.on("disconnect", () => {
       setIsConnected(false);
     });
@@ -166,11 +179,19 @@ const { data: carrierProfile } = useQuery<Partial<User>>({
   }, [user, deliveryId, delivery, navigate, toast]);
 
   // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messages.length > 0 && !isJoining) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages.length, isJoining]);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+useEffect(() => {
+  if (!autoScroll) return;
+
+  requestAnimationFrame(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  });
+}, [messages]);
+
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -203,6 +224,19 @@ const { data: carrierProfile } = useQuery<Partial<User>>({
     };
     reader.readAsDataURL(file);
   };
+
+  const handleTyping = () => {
+    if (!socket) return;
+  
+    socket.emit("typing", { deliveryId });
+  
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("stopTyping", { deliveryId });
+    }, 1200);
+  };
+  
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,62 +340,74 @@ const { data: carrierProfile } = useQuery<Partial<User>>({
   return (
     <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <Card className="h-[calc(100vh-8rem)] flex flex-col">
-        <CardHeader className="border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`/deliveries/${deliveryId}`)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <CardTitle className="text-lg">
-                  Chat - Delivery #{deliveryId}
-                </CardTitle>
-                <div className="text-sm text-gray-500 mt-1">
-                  <p className="font-medium text-gray-900">{otherUser?.fullName || "Loading..."}</p>
-                  {otherUser?.phoneNumber && (
-                    <p className="text-gray-600 mt-0.5">
-                      +91 {otherUser.phoneNumber}
-                    </p>
-                  )}
-                  <Button
-                    onClick={() => window.location.href = `tel:${otherUser?.phoneNumber}`}
-                    variant="outline"
-                    size="icon"
-                  >
-                    <Phone className="w-4 h-4" />
-                  </Button>
+      <CardHeader className="border-b">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="flex items-center gap-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(`/deliveries/${deliveryId}`)}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
+      </Button>
 
+      <div className="flex flex-col leading-tight">
+        <CardTitle className="text-lg font-semibold">
+          Chat - Delivery #{deliveryId}
+        </CardTitle>
 
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isConnected ? (
-                <div className="flex items-center text-sm text-green-600">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mr-2"></div>
-                  Online
-                </div>
-              ) : (
-                <div className="flex items-center text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                  Connecting...
-                </div>
-              )}
-            </div>
+        <p className="text-sm font-medium text-gray-900">
+          {otherUser?.fullName || "Loading..."}
+        </p>
+
+        {(isSender && carrierProfile?.phoneNumber) ||
+        (!isSender && senderProfile?.phoneNumber) ? (
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-gray-600">
+              +91 {isSender ? carrierProfile?.phoneNumber : senderProfile?.phoneNumber}
+            </p>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                window.location.href = `tel:${isSender ? carrierProfile?.phoneNumber : senderProfile?.phoneNumber}`
+              }
+            >
+              <Phone className="h-4 w-4" />
+            </Button>
           </div>
-        </CardHeader>
+        ) : null}
+        
+        {/* Typing indicator always visible zone */}
+        {isTyping && (
+          <p className="text-xs text-green-500 mt-1 animate-pulse">
+            {otherUser?.fullName} is typing... 💬
+          </p>
+        )}
 
-        <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+      </div>
+    </div>
+
+    {/* online indicator */}
+    <div className="flex items-center text-sm gap-2">
+      <span className={`w-2 h-2 rounded-full ${
+        isConnected ? "bg-green-600" : "bg-gray-400"
+      }`} />
+      <span>{isConnected ? "Online" : "Connecting..."}</span>
+    </div>
+  </div>
+</CardHeader>
+
+
+          <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden p-0">
           {/* Messages container */}
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0"
           >
+
             {isJoining && (
               <div className="text-center text-sm text-gray-500">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
@@ -481,7 +527,10 @@ const { data: carrierProfile } = useQuery<Partial<User>>({
               </label>
               <Input
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  handleTyping();
+                }}
                 placeholder="Type a message..."
                 disabled={!isConnected || isJoining}
                 className="flex-1"

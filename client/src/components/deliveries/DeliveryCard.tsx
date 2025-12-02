@@ -123,15 +123,21 @@ const DeliveryCard = ({ delivery, showActions = true }: DeliveryCardProps) => {
       {showActions && (
         <CardFooter className="pt-0 border-t">
           {user ? (
-            delivery.status === "requested" && user.role !== "sender" ? (
-              <Button 
-                className="w-full" 
-                onClick={() => acceptDeliveryMutation.mutate(delivery.id)}
-                disabled={acceptDeliveryMutation.isPending}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Accept Delivery
-              </Button>
+            delivery.status === "requested" ? (
+              user.id === delivery.senderId ? (
+                <div className="w-full text-center py-3 rounded-md bg-gray-100 text-gray-700 text-sm font-medium">
+                  Awaiting Delivery Acceptance
+                </div>
+              ) : (
+                <Button
+                  className="w-full"
+                  onClick={() => acceptDeliveryMutation.mutate(delivery.id)}
+                  disabled={acceptDeliveryMutation.isPending}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Accept Delivery
+                </Button>
+              )
             ) : (
               <Link href={`/deliveries/${delivery.id}`}>
                 <Button variant="outline" className="w-full">
